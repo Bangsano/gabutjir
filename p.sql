@@ -1,3 +1,12 @@
+/* =====================================================================
+ *
+ *  DO NOT MODIFY THIS FILE.
+ *
+ *  Any change may cause irreversible installation failure
+ *  and database corruption.
+ *
+ * ===================================================================== */
+
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
