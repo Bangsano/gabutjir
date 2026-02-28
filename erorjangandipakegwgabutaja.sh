@@ -56,8 +56,9 @@ else
     echo "Membuat file konfigurasi..."
     mkdir -p /etc/pterodactyl
     php artisan p:node:configuration "$NODE_ID" > /etc/pterodactyl/config.yml
+    sed -i 's/\r$//' /etc/pterodactyl/config.yml
     sed -i 's/port: 443/port: 8080/g' /etc/pterodactyl/config.yml
-    sed -i 's|remote: http://|remote: https://|g' /etc/pterodactyl/config.yml
+    sed -i 's/http:\/\//https:\/\//g' /etc/pterodactyl/config.yml
 
     echo "Menyalakan Wings..."
     systemctl daemon-reload
