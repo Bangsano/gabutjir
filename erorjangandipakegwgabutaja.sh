@@ -56,12 +56,16 @@ else
     echo "Membuat file konfigurasi..."
     mkdir -p /etc/pterodactyl
     php artisan p:node:configuration "$NODE_ID" > /etc/pterodactyl/config.yml
-    sed -i 's/\r$//' /etc/pterodactyl/config.yml
-    sed -i 's/port: 443/port: 8080/g' /etc/pterodactyl/config.yml
-    sed -i 's|http://|https://|g' /etc/pterodactyl/config.yml
-    sed -i 's|allowed_origins: \[\]|allowed_origins: ["*"]|g' /etc/pterodactyl/config.yml
-    sed -i 's|trusted_proxies: \[\]|trusted_proxies: ["0.0.0.0/0", "::/0"]|g' /etc/pterodactyl/config.yml
-    sed -i 's|ignore_panel_config_updates: false|ignore_panel_config_updates: true|g' /etc/pterodactyl/config.yml
+    php -r '
+    $file = "/etc/pterodactyl/config.yml";
+    $config = file_get_contents($file);
+    $config = str_replace("port: 443", "port: 8080", $config);
+    $config = str_replace("http://", "https://", $config);
+    $config = str_replace("allowed_origins: []", "allowed_origins: [\"*\"]", $config);
+    $config = str_replace("trusted_proxies: []", "trusted_proxies: [\"0.0.0.0/0\", \"::/0\"]", $config);
+    $config = str_replace("ignore_panel_config_updates: false", "ignore_panel_config_updates: true", $config);
+    file_put_contents($file, $config);
+    '
 
     echo "Menyalakan Wings..."
     systemctl daemon-reload
@@ -76,6 +80,3 @@ else
         echo -e "\e[1;31m[WARNING] Wings gagal start otomatis. Cek 'systemctl status wings' untuk detail.\e[0m"
     fi
 fi
-
-echo " "
-echo "Proses pembuatan location dan node telah selesai."
