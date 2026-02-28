@@ -59,8 +59,9 @@ else
     sed -i 's/\r$//' /etc/pterodactyl/config.yml
     sed -i 's/port: 443/port: 8080/g' /etc/pterodactyl/config.yml
     sed -i 's|http://|https://|g' /etc/pterodactyl/config.yml
-    sed -i 's/allowed_origins:.*/allowed_origins: ["*"]/g' /etc/pterodactyl/config.yml
-    sed -i 's/trusted_proxies:.*/trusted_proxies: ["0.0.0.0\/0", "::\/0"]/g' /etc/pterodactyl/config.yml
+    sed -i 's|allowed_origins: \[\]|allowed_origins: ["*"]|g' /etc/pterodactyl/config.yml
+    sed -i 's|trusted_proxies: \[\]|trusted_proxies: ["0.0.0.0/0", "::/0"]|g' /etc/pterodactyl/config.yml
+    sed -i 's|ignore_panel_config_updates: false|ignore_panel_config_updates: true|g' /etc/pterodactyl/config.yml
 
     echo "Menyalakan Wings..."
     systemctl daemon-reload
