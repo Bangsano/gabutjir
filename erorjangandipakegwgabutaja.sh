@@ -56,15 +56,6 @@ else
     echo "Membuat file konfigurasi..."
     mkdir -p /etc/pterodactyl
     php artisan p:node:configuration "$NODE_ID" > /etc/pterodactyl/config.yml
-    awk '{
-        sub(/port: 443/, "port: 8080");
-        sub(/http:\/\//, "https://");
-        sub(/allowed_origins:.*/, "allowed_origins: [\"*\"]");
-        sub(/trusted_proxies:.*/, "trusted_proxies: [\"0.0.0.0/0\", \"::/0\"]");
-        sub(/ignore_panel_config_updates: false/, "ignore_panel_config_updates: true");
-        print
-    }' /etc/pterodactyl/config.yml > /tmp/wings_config.yml
-    mv /tmp/wings_config.yml /etc/pterodactyl/config.yml
 
     echo "Menyalakan Wings..."
     systemctl daemon-reload
@@ -78,4 +69,14 @@ else
         echo " "
         echo -e "\e[1;31m[WARNING] Wings gagal start otomatis. Cek 'systemctl status wings' untuk detail.\e[0m"
     fi
+    awk '{
+        sub(/port: 443/, "port: 8080");
+        sub(/http:\/\//, "https://");
+        sub(/allowed_origins:.*/, "allowed_origins: [\"*\"]");
+        sub(/trusted_proxies:.*/, "trusted_proxies: [\"0.0.0.0/0\", \"::/0\"]");
+        sub(/ignore_panel_config_updates: false/, "ignore_panel_config_updates: true");
+        print
+    }' /etc/pterodactyl/config.yml > /tmp/wings_config.yml
+    mv /tmp/wings_config.yml /etc/pterodactyl/config.yml
+    systemctl restart wings
 fi
