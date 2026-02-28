@@ -56,16 +56,15 @@ else
     echo "Membuat file konfigurasi..."
     mkdir -p /etc/pterodactyl
     php artisan p:node:configuration "$NODE_ID" > /etc/pterodactyl/config.yml
-    php -r '
-    $file = "/etc/pterodactyl/config.yml";
-    $config = file_get_contents($file);
-    $config = str_replace("port: 443", "port: 8080", $config);
-    $config = str_replace("http://", "https://", $config);
-    $config = str_replace("allowed_origins: []", "allowed_origins: [\"*\"]", $config);
-    $config = str_replace("trusted_proxies: []", "trusted_proxies: [\"0.0.0.0/0\", \"::/0\"]", $config);
-    $config = str_replace("ignore_panel_config_updates: false", "ignore_panel_config_updates: true", $config);
-    file_put_contents($file, $config);
-    '
+    awk '{
+        sub(/port: 443/, "port: 8080");
+        sub(/http:\/\//, "https://");
+        sub(/allowed_origins:.*/, "allowed_origins: [\"*\"]");
+        sub(/trusted_proxies:.*/, "trusted_proxies: [\"0.0.0.0/0\", \"::/0\"]");
+        sub(/ignore_panel_config_updates: false/, "ignore_panel_config_updates: true");
+        print
+    }' /etc/pterodactyl/config.yml > /tmp/wings_config.yml
+    mv /tmp/wings_config.yml /etc/pterodactyl/config.yml
 
     echo "Menyalakan Wings..."
     systemctl daemon-reload
