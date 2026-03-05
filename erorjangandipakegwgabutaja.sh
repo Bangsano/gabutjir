@@ -69,15 +69,14 @@ else
         echo " "
         echo -e "\e[1;31m[WARNING] Wings gagal start otomatis. Cek 'systemctl status wings' untuk detail.\e[0m"
     fi
-
-    echo "Menyuntikkan konfigurasi Cloudflare Tunnel..."
-    sed -i 's/port: 443/port: 8080/g' /etc/pterodactyl/config.yml
-    sed -i 's/http:\/\//https:\/\//g' /etc/pterodactyl/config.yml
-    sed -i 's/allowed_origins:.*/allowed_origins: ["*"]/g' /etc/pterodactyl/config.yml
-    sed -i '/trusted_proxies:/d' /etc/pterodactyl/config.yml
-    sed -i '/ignore_panel_config_updates:/d' /etc/pterodactyl/config.yml
-    echo "trusted_proxies: [\"0.0.0.0/0\", \"::/0\"]" >> /etc/pterodactyl/config.yml
-    echo "ignore_panel_config_updates: true" >> /etc/pterodactyl/config.yml
-    echo "Merestart Wings untuk menerapkan konfigurasi paksa..."
+    awk '{
+        sub(/port: 443/, "port: 8080");
+        sub(/http:\/\//, "https://");
+        sub(/allowed_origins:.*/, "allowed_origins: [\"*\"]");
+        sub(/trusted_proxies:.*/, "trusted_proxies: [\"0.0.0.0/0\", \"::/0\"]");
+        sub(/ignore_panel_config_updates: false/, "ignore_panel_config_updates: true");
+        print
+    }' /etc/pterodactyl/config.yml > /tmp/wings_config.yml
+    mv /tmp/wings_config.yml /etc/pterodactyl/config.yml
     systemctl restart wings
 fi
