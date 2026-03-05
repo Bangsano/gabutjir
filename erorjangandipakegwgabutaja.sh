@@ -57,11 +57,41 @@ else
     mkdir -p /etc/pterodactyl
     php artisan p:node:configuration "$NODE_ID" > /etc/pterodactyl/config.yml
 
-    echo "Menyalakan Wings..."
+    echo "Menyalakan Wings untuk pertama kali..."
     systemctl daemon-reload
     systemctl enable wings
     systemctl restart wings
-    sleep 1
+    
+    echo "Menunggu Wings menarik konfigurasi penuh dari Panel (Maksimal 60 detik)..."
+    CONFIG_READY=false
+    for i in {1..60}; do
+        if grep -q "ignore_panel_config_updates" /etc/pterodactyl/config.yml; then
+            CONFIG_READY=true
+            break
+        fi
+        sleep 1
+    done
+
+    if [ "$CONFIG_READY" = true ]; then
+        echo -e "\e[1;32m[SUKSES] Konfigurasi penuh berhasil ditarik pada detik ke-$i!\e[0m"
+        echo "Menyuntikkan konfigurasi Cloudflare Tunnel dengan AWK..."
+        awk '{
+            sub(/port: 443/, "port: 8080");
+            sub(/http:\/\//, "https://");
+            sub(/allowed_origins:.*/, "allowed_origins: [\"*\"]");
+            sub(/trusted_proxies:.*/, "trusted_proxies: [\"0.0.0.0/0\", \"::/0\"]");
+            sub(/ignore_panel_config_updates: false/, "ignore_panel_config_updates: true");
+            print
+        }' /etc/pterodactyl/config.yml > /tmp/wings_config.yml
+        mv /tmp/wings_config.yml /etc/pterodactyl/config.yml
+        
+        echo "Merestart Wings untuk menerapkan konfigurasi final..."
+        systemctl restart wings
+        sleep 2
+    else
+        echo -e "\e[1;31m[GAGAL] Wings gagal menghubungi Panel setelah 60 detik. AWK dibatalkan.\e[0m"
+    fi
+
     if systemctl is-active --quiet wings; then
         echo " "
         echo -e "\e[1;32m[SUKSES] Wings berhasil dikonfigurasi dan AKTIF (Online)!\e[0m"
@@ -69,14 +99,4 @@ else
         echo " "
         echo -e "\e[1;31m[WARNING] Wings gagal start otomatis. Cek 'systemctl status wings' untuk detail.\e[0m"
     fi
-    awk '{
-        sub(/port: 443/, "port: 8080");
-        sub(/http:\/\//, "https://");
-        sub(/allowed_origins:.*/, "allowed_origins: [\"*\"]");
-        sub(/trusted_proxies:.*/, "trusted_proxies: [\"0.0.0.0/0\", \"::/0\"]");
-        sub(/ignore_panel_config_updates: false/, "ignore_panel_config_updates: true");
-        print
-    }' /etc/pterodactyl/config.yml > /tmp/wings_config.yml
-    mv /tmp/wings_config.yml /etc/pterodactyl/config.yml
-    systemctl restart wings
 fi
