@@ -53,16 +53,24 @@ if [ -z "$NODE_ID" ]; then
     echo "⚠️  Silakan konfigurasi Wings secara manual."
 else
     echo "✅ Node ID terdeteksi: $NODE_ID"
-    echo "Membuat file konfigurasi..."
+    echo "Membuat file konfigurasi dasar..."
     mkdir -p /etc/pterodactyl
     php artisan p:node:configuration "$NODE_ID" > /etc/pterodactyl/config.yml
 
-    echo "Menyalakan Wings untuk pertama kali..."
+    echo "MODIFIKASI TAHAP 1: Mengamankan Port agar Wings bisa hidup..."
+    awk '{
+        sub(/port: 443/, "port: 8080");
+        sub(/http:\/\//, "https://");
+        print
+    }' /etc/pterodactyl/config.yml > /tmp/wings_config_temp.yml
+    mv /tmp/wings_config_temp.yml /etc/pterodactyl/config.yml
+
+    echo "Menyalakan Wings untuk menarik konfigurasi penuh dari Panel..."
     systemctl daemon-reload
     systemctl enable wings
     systemctl restart wings
-    
-    echo "Menunggu Wings menarik konfigurasi penuh dari Panel (Maksimal 60 detik)..."
+
+    echo "Menunggu Wings menarik konfigurasi (Maksimal 60 detik)..."
     CONFIG_READY=false
     for i in {1..60}; do
         if grep -q "ignore_panel_config_updates" /etc/pterodactyl/config.yml; then
@@ -73,8 +81,9 @@ else
     done
 
     if [ "$CONFIG_READY" = true ]; then
-        echo -e "\e[1;32m[SUKSES] Konfigurasi penuh berhasil ditarik pada detik ke-$i!\e[0m"
-        echo "Menyuntikkan konfigurasi Cloudflare Tunnel dengan AWK..."
+        echo -e "\e[1;32m[SUKSES] Konfigurasi penuh ditarik pada detik ke-$i!\e[0m"
+        
+        echo "MODIFIKASI TAHAP 2: Menyuntikkan konfigurasi Proksi & Cloudflare..."
         awk '{
             sub(/port: 443/, "port: 8080");
             sub(/http:\/\//, "https://");
@@ -85,11 +94,12 @@ else
         }' /etc/pterodactyl/config.yml > /tmp/wings_config.yml
         mv /tmp/wings_config.yml /etc/pterodactyl/config.yml
         
-        echo "Merestart Wings untuk menerapkan konfigurasi final..."
+        echo "Merestart Wings untuk mengunci konfigurasi..."
         systemctl restart wings
         sleep 2
     else
-        echo -e "\e[1;31m[GAGAL] Wings gagal menghubungi Panel setelah 60 detik. AWK dibatalkan.\e[0m"
+        echo -e "\e[1;31m[GAGAL] Wings mati atau gagal menghubungi Panel setelah 60 detik.\e[0m"
+        echo -e "\e[1;33m[INFO] Silakan cek log: journalctl -u wings -n 50 --no-pager\e[0m"
     fi
 
     if systemctl is-active --quiet wings; then
